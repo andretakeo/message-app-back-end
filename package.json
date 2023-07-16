@@ -1,0 +1,18 @@
+{
+  "name": "message-app-back-end",
+  "version": "1.0.0",
+  "description": "open-source message app back-end using mongo db and express",
+  "main": "index.js",
+  "license": "ISC",
+  "type": "module",
+  "scripts": {
+    "start": "cross-env NODE_ENV=production node ./src/index.js",
+    "dev": "cross-env NODE_ENV=development nodemon ./src/index.js"
+  },
+  "author": "André Takeo Loschner Fujiwara",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "nodemon": "^2.0.21"
+  }
+}
