@@ -31,8 +31,22 @@ app.use(
 );
 
 app.post("/", (req, res) => {
-  res.json("hello from server");
-  res.json(req.body);
+  throw createHttpError.BadRequest("this route has an error");
+});
+
+app.use(async (req, res, next) => {
+  next(createHttpError.NotFound("This route does not exist."));
+});
+
+// handling errors
+app.use(async (err, req, res, next) => {
+  res.status(err.status || 500);
+  res.send({
+    error: {
+      status: err.status || 500,
+      message: err.message,
+    },
+  });
 });
 
 app.get("/", (req, res) => {
