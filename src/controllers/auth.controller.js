@@ -1,6 +1,11 @@
 import createHttpError from "http-errors";
 import { createUser, signUser } from "../services/auth.service.js";
-import { generateToken, validateToken } from "../services/token.service.js";
+import {
+  generateToken,
+  validateToken,
+  revokeToken,
+  isTokenRevoked,
+} from "../services/token.service.js";
 
 export const register = async (req, res, next) => {
   try {
@@ -71,7 +76,7 @@ export const login = async (req, res, next) => {
 
       res.cookie("refreshtoken", refreshToken, {
         httpOnly: true,
-        path: "/api/v1/auth/refreshtoken",
+        path: "/api/v1/auth/",
         maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
       });
     }
@@ -93,7 +98,39 @@ export const login = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
   try {
-    res.clearCookie("refreshtoken", { path: "/api/v1/auth/refreshtoken" });
+    const refreshToken = req.cookies.refreshtoken;
+    if (!refreshToken) {
+      throw createHttpError.Unauthorized("Please, login first.");
+    }
+
+    const isRevoked = await isTokenRevoked(refreshToken);
+    if (isRevoked) {
+      throw createHttpError.Unauthorized("Please, login first.");
+    }
+
+    const check = await validateToken(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const payload = {
+      userId: check.userId,
+      token: refreshToken,
+      exp: check.exp,
+    };
+
+    console.log(payload);
+
+    await revokeToken({
+      userId: check.userId,
+      token: refreshToken,
+      expiresAt: new Date(check.exp * 1000),
+    });
+
+    await res.clearCookie("refreshtoken", {
+      path: "/api/v1/auth/",
+    });
+
     res.json({ message: "logout successful!" });
   } catch (error) {
     next(error);
@@ -103,8 +140,15 @@ export const logout = async (req, res, next) => {
 export const refreshToken = async (req, res, next) => {
   try {
     const refreshToken = req.cookies.refreshtoken;
+    console.log(refreshToken);
 
     if (!refreshToken) {
+      throw createHttpError.Unauthorized("Please, login first.");
+    }
+
+    // check if the refresh token is revoked
+    const isRevoked = await isTokenRevoked(refreshToken);
+    if (isRevoked) {
       throw createHttpError.Unauthorized("Please, login first.");
     }
 
