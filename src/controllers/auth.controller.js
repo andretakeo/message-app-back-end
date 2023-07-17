@@ -34,7 +34,7 @@ export const register = async (req, res, next) => {
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      path: "/api/v1/auth/refreshToken",
+      path: "/api/v1/auth/",
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     });
 
