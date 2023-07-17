@@ -1,7 +1,7 @@
 import createHttpError from "http-errors";
-import userModel from "../models/index.js";
 import bcrypt from "bcrypt";
 
+import { userModel } from "../models/index.js";
 import {
   validateName,
   validateEmail,

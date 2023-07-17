@@ -1,3 +1,4 @@
 import userModel from "./userModel.js";
+import RevokedToken from "./revokedTokenModel.js";
 
-export default userModel;
+export { userModel, RevokedToken };
