@@ -2,8 +2,6 @@ import createHttpError from "http-errors";
 import { createUser, signUser } from "../services/auth.service.js";
 import { generateToken, validateToken } from "../services/token.service.js";
 
-const { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } = process.env;
-
 export const register = async (req, res, next) => {
   try {
     const { name, email, status, picture, password } = req.body;
@@ -17,19 +15,19 @@ export const register = async (req, res, next) => {
       password,
     });
 
-    const access_token = await generateToken(
+    const accessToken = await generateToken(
       { userId: newUser._id },
       "15m",
-      ACCESS_TOKEN_SECRET
+      process.env.ACCESS_TOKEN_SECRET
     );
 
-    const refresh_token = await generateToken(
+    const refreshToken = await generateToken(
       { userId: newUser._id },
-      "15m",
-      REFRESH_TOKEN_SECRET
+      "30d",
+      process.env.REFRESH_TOKEN_SECRET
     );
 
-    res.cookie("refreshToken", refresh_token, {
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       path: "/api/v1/auth/refreshToken",
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
@@ -43,13 +41,86 @@ export const register = async (req, res, next) => {
         status: newUser.status,
         picture: newUser.picture,
       },
-      accessToken: access_token,
+      accessToken: accessToken,
     });
   } catch (error) {
     next(error);
   }
 };
 
-export const login = async (req, res, next) => {};
+export const login = async (req, res, next) => {
+  try {
+    const { email, password, remember } = req.body;
 
-export const logout = async (req, res, next) => {};
+    // will take care of validation and creating user
+    const user = await signUser(email, password);
+
+    const accessToken = await generateToken(
+      { userId: user._id },
+      "15m",
+      process.env.ACCESS_TOKEN_SECRET
+    );
+
+    // Adding a remember me feature
+    if (remember === true) {
+      const refreshToken = await generateToken(
+        { userId: user._id },
+        "30d",
+        process.env.REFRESH_TOKEN_SECRET
+      );
+
+      res.cookie("refreshtoken", refreshToken, {
+        httpOnly: true,
+        path: "/api/v1/auth/refreshtoken",
+        maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+      });
+    }
+
+    res.json({
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        status: user.status,
+        picture: user.picture,
+      },
+      accesstoken: accessToken,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const logout = async (req, res, next) => {
+  try {
+    res.clearCookie("refreshtoken", { path: "/api/v1/auth/refreshtoken" });
+    res.json({ message: "logout successful!" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const refreshToken = async (req, res, next) => {
+  try {
+    const refreshToken = req.cookies.refreshtoken;
+
+    if (!refreshToken) {
+      throw createHttpError.Unauthorized("Please, login first.");
+    }
+
+    const check = await validateToken(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const access_token = await generateToken(
+      { userId: check.userId },
+      "15m",
+      process.env.ACCESS_TOKEN_SECRET
+    );
+
+    res.json({ accessToken: access_token });
+  } catch (error) {
+    next(error);
+  }
+};
