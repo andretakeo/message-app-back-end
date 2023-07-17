@@ -15,10 +15,12 @@ export const validateEmail = (email) => {
   }
 };
 
-export const validateStatus = (status) => {
-  if (!validator.isLength(status, { min: 4, max: 60 })) {
+export const validateStatus = (status, default_status) => {
+  if (status.length === 0) return default_status;
+
+  if (!validator.isLength(status, { min: 0, max: 60 })) {
     throw createHttpError.BadRequest(
-      "Status should be at least 4 characters and not more than 60 characters."
+      "Status should be at least 0 characters and not more than 60 characters."
     );
   }
 };

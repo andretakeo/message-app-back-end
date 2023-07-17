@@ -24,8 +24,6 @@ export const createUser = async (user) => {
 
   validateEmail(email);
 
-  validateStatus(status);
-
   validatePassword(password);
 
   //   check if user already exists
@@ -39,7 +37,7 @@ export const createUser = async (user) => {
   const newUser = await new userModel({
     name,
     email,
-    status: status || DEFAULT_STATUS,
+    status: validateStatus(status, DEFAULT_STATUS) || DEFAULT_STATUS,
     picture: validatePicture(picture, DEFAULT_PICTURE) || DEFAULT_PICTURE,
     password,
   }).save();
