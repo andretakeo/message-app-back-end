@@ -30,16 +30,24 @@ export const updateUserProfile = async (
 
     let foundUser = await findUserById(userId);
 
+    const isPasswordValid = await bcrypt.compare(password, foundUser.password);
+
+    if (!isPasswordValid) {
+      throw new createHttpError.BadRequest("Invalid credendtials.");
+    }
+
+    if (email !== foundUser.email) {
+      throw new createHttpError.BadRequest("Invalid credentials.");
+    }
+
     const userUpdate = {
       name: validateNameUpdate(foundUser.name, name),
-      email: validateEmailUpdate(foundUser.email, email),
       picture: validatePictureUpdate(
         foundUser.picture,
         picture,
         DEFAULT_PICTURE
       ),
       status: validateStatusUpdate(foundUser.status, status, DEFAULT_STATUS),
-      password: await validatePasswordUpdate(foundUser.password, password),
     };
 
     const updatedUser = await userModel.findByIdAndUpdate(userId, userUpdate, {
@@ -55,4 +63,73 @@ export const updateUserProfile = async (
   } catch (error) {
     throw new createHttpError.BadRequest("Failed to update user.");
   }
+};
+
+export const deleteUserProfile = async (userId, email, password) => {
+  try {
+    const foundUser = await findUserById(userId);
+
+    const isPasswordValid = await bcrypt.compare(password, foundUser.password);
+
+    if (!isPasswordValid) {
+      throw new createHttpError.BadRequest("Invalid credendtials.");
+    }
+
+    if (email !== foundUser.email) {
+      throw new createHttpError.BadRequest("Invalid credentials.");
+    }
+
+    const deletedUser = await userModel.findByIdAndDelete(userId);
+
+    return deletedUser;
+  } catch (error) {
+    throw new createHttpError.BadRequest("Failed to delete user.");
+  }
+};
+
+export const changePassword = async (userId, payload) => {
+  try {
+    const { oldPassword, newPassword } = payload;
+
+    const foundUser = await findUserById(userId);
+
+    const isPasswordValid = await bcrypt.compare(
+      oldPassword,
+      foundUser.password
+    );
+
+    if (!isPasswordValid) {
+      throw new createHttpError.BadRequest("Invalid credentials.");
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    const updatedUser = await userModel.findByIdAndUpdate(
+      userId,
+      { password: hashedPassword },
+      { new: true }
+    );
+
+    return updatedUser;
+  } catch (error) {
+    throw new createHttpError.BadRequest("Failed to change password.");
+  }
+};
+
+export const changeEmail = async (userId, payload) => {
+  const { newEmail, password } = payload;
+  const foundUser = await findUserById(userId);
+
+  const isPasswordValid = await bcrypt.compare(password, foundUser.password);
+
+  if (!isPasswordValid) {
+    throw new createHttpError.BadRequest("Invalid credentials.");
+  }
+
+  const updatedUser = await userModel.findByIdAndUpdate(userId, {
+    email: newEmail,
+  });
+
+  return updatedUser;
 };

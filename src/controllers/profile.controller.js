@@ -2,7 +2,10 @@ import createHttpError from "http-errors";
 import jwt from "jsonwebtoken";
 
 import { logger } from "../configs/logger.config.js";
-import { updateUserProfile } from "../services/profile.service.js";
+import {
+  updateUserProfile,
+  deleteUserProfile,
+} from "../services/profile.service.js";
 import { validateToken } from "../services/token.service.js";
 
 export const updateUser = async (req, res, next) => {
@@ -38,4 +41,18 @@ export const updateUser = async (req, res, next) => {
     logger.error(error);
     next(createHttpError.BadRequest("Failed to update user."));
   }
+};
+
+export const deleteUser = async (req, res, next) => {
+  // Pick the userId from the access cookie and the user from the request body.
+  // So that the user can only delete his own profile.
+
+  const bearerToken = req.headers["authorization"];
+  const token = bearerToken.split(" ")[1];
+  const check = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+  const { userId } = check;
+  const { email, password } = req.body;
+
+  const deletedUser = await deleteUserProfile(userId, email, password);
 };
