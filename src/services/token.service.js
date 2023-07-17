@@ -1,5 +1,5 @@
 import { signToken, verifyToken } from "../utils/token.util.js";
-import RevokedToken from "../models/revokedTokenModel.js";
+import { RevokedToken } from "../models/index.js";
 
 export const generateToken = async (payload, expiresIn, secret) => {
   const token = await signToken(payload, expiresIn, secret);
