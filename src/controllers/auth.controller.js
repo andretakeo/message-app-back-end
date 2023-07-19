@@ -119,8 +119,6 @@ export const logout = async (req, res, next) => {
       exp: check.exp,
     };
 
-    console.log(payload);
-
     await revokeToken({
       userId: check.userId,
       token: refreshToken,

@@ -7,6 +7,15 @@ export const findUser = async (userId) => {
   return user;
 };
 
+export const searchUsersByIds = async (userIds) => {
+  try {
+    const users = await userModel.find({ _id: { $in: userIds } });
+    return users;
+  } catch (error) {
+    throw createHttpError.BadRequest("Oops... Something went wrong!");
+  }
+};
+
 export const searchUsers = async (keyword, userId) => {
   const users = await userModel
     .find({

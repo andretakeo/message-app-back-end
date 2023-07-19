@@ -4,7 +4,7 @@ const { ObjectId } = mongoose.Schema.Types;
 // const messageSchema = new mongoose.Schema({
 //   sender: {
 //     type: mongoose.Schema.Types.ObjectId,
-//     ref: 'User',
+//     ref: 'userModel',
 //     required: true
 //   },
 //   content: {
@@ -39,10 +39,12 @@ const conversationSchema = mongoose.Schema(
       type: ObjectId,
       ref: "MessageModel",
     },
-    admin: {
-      type: ObjectId,
-      ref: "UserModel",
-    },
+    admin: [
+      {
+        type: ObjectId,
+        ref: "UserModel",
+      },
+    ],
   },
   {
     collection: "conversations",
@@ -50,6 +52,8 @@ const conversationSchema = mongoose.Schema(
   }
 );
 
-const Conversation = mongoose.model("Conversation", conversationSchema);
+const ConversationModel =
+  mongoose.models.ConversationModel ||
+  mongoose.model("ConversationModel", conversationSchema);
 
-module.exports = Conversation;
+export default ConversationModel;
