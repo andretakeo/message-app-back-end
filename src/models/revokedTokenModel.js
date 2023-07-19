@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const revokedTokenSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "user",
+    ref: "UserModel",
   },
   token: {
     type: String,
