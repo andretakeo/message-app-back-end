@@ -1,62 +1,44 @@
 import createHttpError from "http-errors";
 import { conversationModel, userModel } from "../models/index.js";
-import {
-  validateConversationName,
-  validateConversationUsers,
-  validateConversationAdmin,
-  validateConversationIsGroup,
-} from "../utils/conversation.util.js";
+import { update_conversation_name } from "../controllers/conversation.controller.js";
 
-// // this is what should go to the database
-
-// {
-//     name: "Example Conversation",
-//     isGroup: false,
-//     users: [
-//       ObjectId("user1Id"),
-//       ObjectId("user2Id"),
-//       ObjectId("user3Id")
-//     ],
-//     latestMessage: ObjectId("messageId"),
-//     admin: ObjectId("adminUserId")
-//   }
+export const findConversationById = async (id) => {
+  try {
+    const foundConvo = await conversationModel.findOne({ _id: id });
+    return foundConvo;
+  } catch (error) {
+    throw createHttpError.BadRequest("Oops...Something went wrong !");
+  }
+};
 
 export const doesConversationExist = async (sender_id, receiver_id) => {
-  const convos = await conversationModel
+  let convos = await conversationModel
     .find({
       isGroup: false,
-      users: { $all: [sender_id, receiver_id] },
+      $and: [
+        { users: { $elemMatch: { $eq: sender_id } } },
+        { users: { $elemMatch: { $eq: receiver_id } } },
+      ],
     })
     .populate("users", "-password")
-    .populate("latestMessage")
-    .populate("latestMessage.sender", "name email picture status");
+    .populate("latestMessage");
 
-  console.log(convos);
+  if (!convos)
+    throw createHttpError.BadRequest("Oops...Something went wrong !");
 
-  if (convos.length === 0) {
-    return false;
-  }
+  //populate message model
+  convos = await userModel.populate(convos, {
+    path: "latestMessage.sender",
+    select: "name email picture status",
+  });
 
   return convos[0];
 };
 
 export const createConversation = async (data) => {
-  const { name, isGroup, users, admin } = data;
-
-  validateConversationName(name);
-  validateConversationUsers(users);
-  validateConversationAdmin(admin);
-  validateConversationIsGroup(isGroup, users);
-
-  const newConvo = await conversationModel.create({
-    name,
-    isGroup,
-    users,
-    admin,
-  });
+  const newConvo = await conversationModel.create(data);
   if (!newConvo)
-    throw createHttpError.BadRequest("Oops... Something went wrong!");
-
+    throw createHttpError.BadRequest("Oops...Something went wrong !");
   return newConvo;
 };
 
@@ -67,36 +49,41 @@ export const populateConversation = async (
 ) => {
   const populatedConvo = await conversationModel
     .findOne({ _id: id })
-    .populate(fieldToPopulate, fieldsToRemove)
-    .populate("latestMessage.sender", "name email picture status");
-
+    .populate(fieldToPopulate, fieldsToRemove);
   if (!populatedConvo)
-    throw createHttpError.BadRequest("Oops... Something went wrong!");
-
+    throw createHttpError.BadRequest("Oops...Something went wrong !");
   return populatedConvo;
 };
 
-export const findUserConversations = async (userId) => {
-  try {
-    const conversations = await conversationModel.find({ users: userId });
-
-    return conversations;
-  } catch (err) {
-    throw createHttpError.BadRequest("Unable to find conversations!");
-  }
+export const getUserConversations = async (userId) => {
+  const convos = await conversationModel
+    .find({ users: { $elemMatch: { $eq: userId } } })
+    .populate("users admin", "-password")
+    .populate("latestMessage");
+  if (!convos)
+    throw createHttpError.BadRequest("Oops...Something went wrong !");
+  return convos;
 };
 
-export const addUsersToConversation = async (conversationId, userIds) => {
-  try {
-    const updatedConversation = await conversationModel.findByIdAndUpdate(
-      conversationId,
-      {
-        $push: { users: { $each: userIds } },
-      },
-      { new: true }
-    );
-    return updatedConversation;
-  } catch (error) {
-    throw createHttpError.BadRequest("Oops... Something went wrong!");
+export const updateConversation = async (convoId, data) => {
+  const updatedConvo = await conversationModel.findOneAndUpdate(
+    { _id: convoId },
+    data,
+    { new: true }
+  );
+  if (!updatedConvo)
+    throw createHttpError.BadRequest("Oops...Something went wrong !");
+  return updatedConvo;
+};
+
+export const deleteConversation = async (convoId) => {
+  if (!convoId) {
+    throw createHttpError.BadRequest("Please provide a conversation id !");
   }
+  const deletedConvo = await conversationModel.findOneAndDelete({
+    _id: convoId,
+  });
+
+  if (!deletedConvo)
+    throw createHttpError.BadRequest("Oops...Something went wrong !");
 };
