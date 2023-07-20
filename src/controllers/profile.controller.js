@@ -5,27 +5,14 @@ import { logger } from "../configs/logger.config.js";
 import {
   updateUserProfile,
   deleteUserProfile,
+  changeEmail,
+  changePassword,
 } from "../services/profile.service.js";
-import { validateToken } from "../services/token.service.js";
+import { getAccessToken } from "../services/token.service.js";
 
 export const updateUser = async (req, res, next) => {
   try {
-    // Pick the userId from the access cookie and the user from the request body.
-    // So that the user can only update his own profile.
-
-    const bearerToken = req.headers["authorization"];
-    const token = bearerToken.split(" ")[1];
-    const check = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-
-    const isExpired = Date.now() >= check.exp * 1000;
-
-    if (isExpired) {
-      throw new createHttpError.Unauthorized("Access token expired.");
-    }
-
-    const { userId } = check;
-
-    console.log(userId);
+    const { userId } = await getAccessToken(req.headers["authorization"]);
 
     const { user } = req.body;
 
@@ -39,20 +26,67 @@ export const updateUser = async (req, res, next) => {
     res.json(updatedUser);
   } catch (error) {
     logger.error(error);
-    next(createHttpError.BadRequest("Failed to update user."));
+    next(
+      error instanceof createHttpError.HttpError
+        ? error
+        : new createHttpError.InternalServerError("Failed to update user.")
+    );
+  }
+};
+
+export const updateEmail = async (req, res, next) => {
+  try {
+    const { userId } = await getAccessToken(req.headers["authorization"]);
+    const { newEmail } = req.body;
+
+    const updatedUser = await changeEmail(userId, { newEmail });
+
+    res.json(updatedUser);
+  } catch (error) {
+    logger.error(error);
+    next(
+      error instanceof createHttpError.HttpError
+        ? error
+        : new createHttpError.InternalServerError("Failed to update email.")
+    );
+  }
+};
+
+export const updatePassword = async (req, res, next) => {
+  try {
+    const { userId } = await getAccessToken(req.headers["authorization"]);
+    const { oldPassword, newPassword } = req.body;
+
+    const updatedUser = await changePassword(userId, {
+      oldPassword,
+      newPassword,
+    });
+
+    res.json(updatedUser);
+  } catch (error) {
+    logger.error(error);
+    next(
+      error instanceof createHttpError.HttpError
+        ? error
+        : new createHttpError.InternalServerError("Failed to update password.")
+    );
   }
 };
 
 export const deleteUser = async (req, res, next) => {
-  // Pick the userId from the access cookie and the user from the request body.
-  // So that the user can only delete his own profile.
+  try {
+    const { userId } = await getAccessToken(req.headers["authorization"]);
+    const { email, password } = req.body;
 
-  const bearerToken = req.headers["authorization"];
-  const token = bearerToken.split(" ")[1];
-  const check = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const deletedUser = await deleteUserProfile(userId, email, password);
 
-  const { userId } = check;
-  const { email, password } = req.body;
-
-  const deletedUser = await deleteUserProfile(userId, email, password);
+    res.json(deletedUser);
+  } catch (error) {
+    logger.error(error);
+    next(
+      error instanceof createHttpError.HttpError
+        ? error
+        : new createHttpError.InternalServerError("Failed to delete user.")
+    );
+  }
 };

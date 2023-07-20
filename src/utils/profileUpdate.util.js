@@ -44,7 +44,12 @@ export function validateStatusUpdate(initialState, finalState, defaultStatus) {
   if (finalState === null || finalState === initialState) {
     return initialState;
   }
-  return validateStatus(finalState, defaultStatus);
+
+  if (finalState === "") {
+    return defaultStatus;
+  }
+
+  return finalState;
 }
 
 export async function validatePasswordUpdate(initialState, finalState) {

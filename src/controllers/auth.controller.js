@@ -22,7 +22,7 @@ export const register = async (req, res, next) => {
 
     const accessToken = await generateToken(
       { userId: newUser._id },
-      "15m",
+      "10d",
       process.env.ACCESS_TOKEN_SECRET
     );
 
@@ -62,7 +62,7 @@ export const login = async (req, res, next) => {
 
     const accessToken = await generateToken(
       { userId: user._id },
-      "15m",
+      "10d",
       process.env.ACCESS_TOKEN_SECRET
     );
 
@@ -119,8 +119,6 @@ export const logout = async (req, res, next) => {
       exp: check.exp,
     };
 
-    console.log(payload);
-
     await revokeToken({
       userId: check.userId,
       token: refreshToken,
@@ -159,7 +157,7 @@ export const refreshToken = async (req, res, next) => {
 
     const access_token = await generateToken(
       { userId: check.userId },
-      "15m",
+      "10d",
       process.env.ACCESS_TOKEN_SECRET
     );
 
