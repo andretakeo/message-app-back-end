@@ -11,6 +11,11 @@ export const register = async (req, res, next) => {
   try {
     const { name, email, status, picture, password } = req.body;
 
+    const currentRefreshToken = req.cookies.refreshtoken;
+    if (currentRefreshToken) {
+      throw createHttpError.BadRequest("You are already logged in.");
+    }
+
     // will take care of validation and creating user
     const newUser = await createUser({
       name,
@@ -56,6 +61,11 @@ export const register = async (req, res, next) => {
 export const login = async (req, res, next) => {
   try {
     const { email, password, remember } = req.body;
+
+    const currentRefreshToken = req.cookies.refreshtoken;
+    if (currentRefreshToken) {
+      throw createHttpError.BadRequest("You are already logged in.");
+    }
 
     // will take care of validation and creating user
     const user = await signUser(email, password);
