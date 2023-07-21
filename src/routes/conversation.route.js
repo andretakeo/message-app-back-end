@@ -2,21 +2,35 @@ import express from "express";
 import trimRequest from "trim-request";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import {
-  create_open_conversation,
   create_group_conversation,
-  get_user_conversations,
+  create_open_conversation,
+  delete_conversation,
+  get_user_conversation,
+  update_conversation_name,
 } from "../controllers/conversation.controller.js";
-
 const router = express.Router();
 
+// CREATE CONVERSATION
 router
-  .route("/create")
+  .route("/")
   .post(trimRequest.all, authMiddleware, create_open_conversation);
 
 router
-  .route("/create/group")
+  .route("/group")
   .post(trimRequest.all, authMiddleware, create_group_conversation);
 
-router.route("/").get(authMiddleware, get_user_conversations);
+// UPDATE CONVERSATION
+router
+  .route("/update/name/:convoId")
+  .put(trimRequest.all, authMiddleware, update_conversation_name);
+
+// GET CONVERSATION
+
+router.route("/").get(trimRequest.all, authMiddleware, get_user_conversation);
+
+// DELETE CONVERSATION
+router
+  .route("/delete/:convoId")
+  .delete(trimRequest.all, authMiddleware, delete_conversation);
 
 export default router;
